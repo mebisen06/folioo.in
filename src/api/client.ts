@@ -1,7 +1,6 @@
-import { isFirebaseConfigured } from '../firebase'
 import type { Portfolio } from '../types'
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080/api'
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>
@@ -92,7 +91,7 @@ function setStored<T>(key: string, value: T): void {
 }
 
 // Client-side mock REST handler when no Firebase is configured
-async function handleMockRequest(endpoint: string, method: string, body?: any, params?: any): Promise<any> {
+export async function handleMockRequest(endpoint: string, method: string, body?: any, params?: any): Promise<any> {
   // Simulate network latency
   await new Promise(resolve => setTimeout(resolve, 300))
 
@@ -157,7 +156,7 @@ async function handleMockRequest(endpoint: string, method: string, body?: any, p
   if (path === '/admin/dashboard' && method === 'GET') {
     const list = getStored<Portfolio[]>('mock_portfolios', DEFAULT_PORTFOLIOS)
     const users = getStored<any[]>('mock_users_list', [
-      { id: '1', name: 'Admin User', email: 'admin@portifyhub.com', role: 'Admin', status: 'Active', createdAt: '2026-06-01T10:00:00Z', portfoliosCount: 1 },
+      { id: '1', name: 'Admin User', email: 'admin@folioo.in', role: 'Admin', status: 'Active', createdAt: '2026-06-01T10:00:00Z', portfoliosCount: 1 },
       { id: '2', name: 'Jane Doe', email: 'jane@gmail.com', role: 'Creator', status: 'Active', createdAt: '2026-06-05T12:00:00Z', portfoliosCount: 2 },
       { id: '3', name: 'John Smith', email: 'john@gmail.com', role: 'User', status: 'Active', createdAt: '2026-06-10T15:30:00Z', portfoliosCount: 0 }
     ])
@@ -190,7 +189,7 @@ async function handleMockRequest(endpoint: string, method: string, body?: any, p
         description: 'Relevant coursework: Distributed Systems, Database Systems, Web Applications.'
       },
       projects: [
-        { title: 'PortifyHub Sandbox', role: 'Creator', description: 'A template platform built with React 19 and Bun.', tech: 'React, TS' }
+        { title: 'Folioo Sandbox', role: 'Creator', description: 'A template platform built with React 19 and Bun.', tech: 'React, TS' }
       ],
       experiences: [
         { company: 'Vercel', position: 'Software Engineer Intern', duration: 'Summer 2025', description: 'Worked on next-generation rendering engines and frontend components.' }
@@ -306,22 +305,7 @@ class ApiClient {
   private async request<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
     const { params, ...customConfig } = options
 
-    // Check if Firebase is configured; if not, route to client-side mock database
-    if (!isFirebaseConfigured) {
-      let bodyObj: any = undefined
-      if (customConfig.body) {
-        if (typeof customConfig.body === 'string') {
-          try {
-            bodyObj = JSON.parse(customConfig.body)
-          } catch {
-            bodyObj = customConfig.body
-          }
-        } else {
-          bodyObj = customConfig.body
-        }
-      }
-      return handleMockRequest(endpoint, customConfig.method || 'GET', bodyObj, params) as Promise<T>
-    }
+    // Bypassed mock database to route directly to Python FastAPI backend
     
     const token = localStorage.getItem('token')
     const headers: Record<string, string> = {

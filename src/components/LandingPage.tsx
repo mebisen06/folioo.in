@@ -170,8 +170,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         <div className="flex items-center gap-8">
           {/* Logo */}
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => onNavigate('landing')}>
-            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center font-bold text-white shadow-glow">P</div>
-            <span className="font-extrabold tracking-tight text-lg">PortifyHub</span>
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center font-bold text-white shadow-glow">F</div>
+            <span className="font-extrabold tracking-tight text-lg">Folioo</span>
           </div>
 
           {/* Center Links */}
@@ -199,10 +199,10 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
         {/* Buttons right */}
         <div className="hidden sm:flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => onNavigate('components')}>
+          <Button variant="ghost" size="sm" onClick={() => onNavigate('login')}>
             Login
           </Button>
-          <Button variant="glow" size="sm" onClick={() => onNavigate('components')}>
+          <Button variant="glow" size="sm" onClick={() => onNavigate('signup')}>
             Sign Up
           </Button>
         </div>
@@ -248,10 +248,10 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             </button>
             <hr className="border-border/60 my-1" />
             <div className="flex flex-col gap-2.5">
-              <Button variant="outline" size="md" className="w-full" onClick={() => { setMobileMenuOpen(false); onNavigate('components') }}>
+              <Button variant="outline" size="md" className="w-full" onClick={() => { setMobileMenuOpen(false); onNavigate('login') }}>
                 Login
               </Button>
-              <Button variant="glow" size="md" className="w-full" onClick={() => { setMobileMenuOpen(false); onNavigate('components') }}>
+              <Button variant="glow" size="md" className="w-full" onClick={() => { setMobileMenuOpen(false); onNavigate('signup') }}>
                 Sign Up
               </Button>
             </div>
@@ -270,7 +270,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           {/* Tagline Badge */}
           <motion.div variants={fadeIn} className="flex justify-center">
             <Badge variant="accent" dot className="px-3.5 py-1 text-xs">
-              PortifyHub 1.0 Release
+              Folioo 1.0 Release
             </Badge>
           </motion.div>
 
@@ -321,7 +321,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
               <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
-              <span className="text-[10px] text-zinc-500 font-mono ml-2">app.portifyhub.dev/discover</span>
+              <span className="text-[10px] text-zinc-500 font-mono ml-2">app.folioo.in/discover</span>
             </div>
             <div className="w-36 h-4 bg-background border border-border/40 rounded flex items-center justify-center text-[9px] text-zinc-600 font-mono">
               Secure Sandbox Mode
@@ -484,7 +484,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               Create a free account, browse curated templates, checklist deployment pipelines, and generate recruiter-verified portfolios in under 10 minutes.
             </p>
             <div className="pt-2">
-              <Button variant="glow" size="lg" className="w-full sm:w-auto gap-2" onClick={() => onNavigate('components')}>
+              <Button variant="glow" size="lg" className="w-full sm:w-auto gap-2" onClick={() => onNavigate('signup')}>
                 Get Started Free <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
@@ -499,14 +499,14 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           {/* Logo & Info column */}
           <div className="col-span-2 space-y-4">
             <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => onNavigate('landing')}>
-              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center font-bold text-white shadow-glow">P</div>
-              <span className="font-extrabold tracking-tight text-base">PortifyHub</span>
+              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center font-bold text-white shadow-glow">F</div>
+              <span className="font-extrabold tracking-tight text-base">Folioo</span>
             </div>
             <p className="text-xs text-zinc-500 max-w-xs leading-relaxed font-semibold">
               The premium developer-focused SaaS platform for portfolios and resumes. Helping students launch careers.
             </p>
             <div className="text-[10px] text-zinc-600 font-mono">
-              © {new Date().getFullYear()} PortifyHub Inc. All rights reserved.
+              © {new Date().getFullYear()} Folioo Inc. All rights reserved.
             </div>
           </div>
 

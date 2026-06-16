@@ -15,7 +15,6 @@ import {
   Briefcase,
   Trophy,
   LayoutTemplate,
-  Download,
   AlertTriangle
 } from 'lucide-react'
 import { Button } from './ui/Button'
@@ -49,11 +48,10 @@ const DEFAULT_RESUME: ResumeData = {
 }
 
 export default function ResumeBuilder() {
-  const { resumeData: apiResumeData } = useResumeBuilder('current') // Or pass ID
+  const { resumeData: apiResumeData, saveResume } = useResumeBuilder('current')
   const [step, setStep] = React.useState<number>(1)
   const [newSkill, setNewSkill] = React.useState<string>('')
   const [errors, setErrors] = React.useState<Record<string, string>>({})
-  const [showExportModal, setShowExportModal] = React.useState<boolean>(false)
   const [generatingPdf, setGeneratingPdf] = React.useState(false)
   const [pdfError, setPdfError] = React.useState<string | null>(null)
   const [pdfSuccess, setPdfSuccess] = React.useState(false)
@@ -108,11 +106,9 @@ export default function ResumeBuilder() {
         heightLeft -= pageHeight
       }
 
-      const formattedName = (resumeData.name || 'User').trim().replace(/\s+/g, '_')
-      pdf.save(`${formattedName}_Resume.pdf`)
+      pdf.save('resume.pdf')
       setPdfSuccess(true)
       setTimeout(() => setPdfSuccess(false), 4000)
-      setShowExportModal(false)
     } catch (err) {
       console.error('PDF Generation Error:', err)
       setPdfError('Failed to generate PDF. Please try again.')
@@ -129,6 +125,22 @@ export default function ResumeBuilder() {
       setResumeData(apiResumeData)
     }
   }, [apiResumeData])
+
+  // Debounced auto-save effect
+  React.useEffect(() => {
+    if (!resumeData || !resumeData.name) return
+
+    const timer = setTimeout(async () => {
+      try {
+        await saveResume(resumeData)
+        console.log('Resume auto-saved successfully')
+      } catch (err) {
+        console.error('Failed to auto-save resume:', err)
+      }
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [resumeData, saveResume])
 
   // Validate fields for current step
   const validateStep = (currentStep: number): boolean => {
@@ -253,7 +265,7 @@ export default function ResumeBuilder() {
   ]
 
   return (
-    <div className="space-y-8 text-left max-w-7xl mx-auto pb-12">
+    <div className="space-y-8 text-left max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       
       {/* Page Header */}
       <div className="space-y-3">
@@ -514,7 +526,7 @@ export default function ResumeBuilder() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Input
                               label="Project Title"
-                              placeholder="e.g. PortifyHub Sandbox"
+                              placeholder="e.g. Folioo Sandbox"
                               value={proj.title}
                               onChange={(e) => handleUpdateProject(idx, 'title', e.target.value)}
                             />
@@ -805,8 +817,9 @@ export default function ResumeBuilder() {
                   variant="glow" 
                   size="sm" 
                   onClick={() => {
-                    if (validateStep(step)) setShowExportModal(true)
+                    if (validateStep(step)) handleDownloadPDF()
                   }} 
+                  isLoading={generatingPdf}
                   className="gap-1.5"
                 >
                   Generate Resume <Sparkles className="w-4 h-4" />
@@ -926,7 +939,7 @@ export default function ResumeBuilder() {
                 </div>
 
                 <div className="pt-4 border-t border-border/40 text-[9px] font-mono text-zinc-600 flex justify-between">
-                  <span>GEN: PORTIFYHUB BUILDER</span>
+                  <span>GEN: FOLIOO BUILDER</span>
                   <span>v2.1 COMPILER STATUS: OK</span>
                 </div>
               </div>
@@ -1024,7 +1037,7 @@ export default function ResumeBuilder() {
                 </div>
 
                 <div className="pt-2 border-t border-zinc-200 text-[8px] text-zinc-400 text-center font-mono">
-                  PARSER INDEX READY • GENERATED VIA PORTIFYHUB
+                  PARSER INDEX READY • GENERATED VIA FOLIOO
                 </div>
               </div>
             )}
@@ -1110,7 +1123,7 @@ export default function ResumeBuilder() {
                 </div>
 
                 <div className="pt-2 border-t border-border/40 text-[8px] text-zinc-600 text-center font-mono">
-                  ACADEMIC PREVIEW STYLESHEET • PORTIFYHUB
+                  ACADEMIC PREVIEW STYLESHEET • FOLIOO
                 </div>
               </div>
             )}
@@ -1193,7 +1206,7 @@ export default function ResumeBuilder() {
                 </div>
 
                 <div className="pt-2 border-t border-emerald-950 text-[8px] text-emerald-600 text-center font-mono flex justify-between">
-                  <span>ROOT@PORTIFYHUB_BUILDER:~#</span>
+                  <span>ROOT@FOLIOO_BUILDER:~#</span>
                   <span>SYSTEM_READY</span>
                 </div>
               </div>
@@ -1204,78 +1217,7 @@ export default function ResumeBuilder() {
 
       </div>
 
-      {/* Success Dialog Modal after Generation */}
-      <AnimatePresence>
-        {showExportModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            
-            {/* Backdrop blur overlay */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowExportModal(false)}
-              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-            />
-            
-            {/* Modal Dialog */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-              className="relative w-full max-w-md bg-surface border border-border rounded-xl shadow-2xl overflow-hidden z-10 text-left"
-            >
-              <div className="p-6 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-950/40 border border-emerald-900/40 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-bold text-white">Resume Compiled Successfully!</h3>
-                    <p className="text-[11px] text-zinc-500">Document matches target parsing compliance checklists.</p>
-                  </div>
-                </div>
 
-                <div className="p-4 rounded-lg bg-neutral-950/40 border border-border/40 space-y-2.5 text-xs">
-                  <div className="flex justify-between items-center text-[11px] font-mono text-zinc-500">
-                    <span>DOCUMENT TYPE:</span>
-                    <span className="text-zinc-400">PDF Document</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[11px] font-mono text-zinc-500">
-                    <span>LAYOUT PATH:</span>
-                    <span className="text-zinc-400 font-bold uppercase">{resumeData.template} theme</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[11px] font-mono text-zinc-500">
-                    <span>ATS COMPLIANCE SCORE:</span>
-                    <span className="text-emerald-400 font-bold">98 / 100</span>
-                  </div>
-                </div>
-
-                <div className="text-[11px] text-zinc-400 leading-relaxed bg-accent/5 p-3 rounded-lg border border-accent/20">
-                  <strong>Recruiter Tip:</strong> ATS-friendly layouts work best for standard job applications, while Modern Developer styles are great for online portfolios or social shares.
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="p-6 border-t border-border/50 bg-[#111111]/30 flex items-center justify-end gap-3">
-                <Button variant="outline" size="sm" onClick={() => setShowExportModal(false)} disabled={generatingPdf}>
-                  Close
-                </Button>
-                <Button 
-                  variant="glow" 
-                  size="sm" 
-                  onClick={handleDownloadPDF}
-                  isLoading={generatingPdf}
-                  className="gap-1.5"
-                >
-                  <Download className="w-4 h-4" /> Download PDF
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {pdfSuccess && (

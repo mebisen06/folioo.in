@@ -77,13 +77,13 @@ export default function PortfolioDetails({ portfolio, onNavigate }: PortfolioDet
           </button>
         </div>
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => onNavigate('landing')}>
-          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center font-bold text-white shadow-glow">P</div>
-          <span className="font-extrabold tracking-tight text-base">PortifyHub</span>
+          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center font-bold text-white shadow-glow">F</div>
+          <span className="font-extrabold tracking-tight text-base">Folioo</span>
         </div>
       </header>
 
       {/* Container */}
-      <main className="max-w-6xl mx-auto w-full pt-24 pb-24 px-4 sm:px-8 z-10 flex-1 space-y-12">
+      <main className="max-w-7xl mx-auto w-full pt-24 pb-24 px-4 sm:px-6 lg:px-8 z-10 flex-1 space-y-12">
         
         {/* Breadcrumb navigation */}
         <div className="flex items-center gap-2 text-[10px] sm:text-xs font-mono font-semibold text-zinc-500 uppercase tracking-wider">
@@ -255,7 +255,7 @@ npm install`}
                       <pre className="bg-neutral-950 p-4 rounded-lg border border-border/60 text-[11px] font-mono text-zinc-400 overflow-x-auto">
 {`# .env.local
 NEXT_PUBLIC_ANALYTICS_ID=your-google-analytics-id
-NEXT_PUBLIC_API_URL=https://api.portifyhub.dev`}
+NEXT_PUBLIC_API_URL=https://api.folioo.in`}
                       </pre>
                     </div>
 

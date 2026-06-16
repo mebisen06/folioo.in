@@ -78,7 +78,7 @@ export default function Signup({ onNavigate, onSuccess }: SignupProps) {
       <div className="w-full max-w-[440px] z-10 space-y-6">
         <div className="text-center space-y-2">
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center font-bold text-white shadow-glow mx-auto text-lg">
-            P
+            F
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white">Create Your Profile</h1>
           <p className="text-zinc-500 text-sm">Join the gallery and host your interactive templates.</p>

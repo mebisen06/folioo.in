@@ -86,7 +86,7 @@ export default function Login({ onNavigate, onSuccess }: LoginProps) {
       <div className="w-full max-w-[420px] z-10 space-y-6">
         <div className="text-center space-y-2">
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center font-bold text-white shadow-glow mx-auto text-lg">
-            P
+            F
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white">Welcome Back</h1>
           <p className="text-zinc-500 text-sm">Enter your credentials to access your creator profile.</p>
@@ -176,7 +176,7 @@ export default function Login({ onNavigate, onSuccess }: LoginProps) {
         </Card>
 
         <div className="text-center text-sm text-zinc-500">
-          New to PortifyHub?{' '}
+          New to Folioo?{' '}
           <button
             onClick={() => onNavigate('signup')}
             className="text-accent hover:underline font-medium cursor-pointer"

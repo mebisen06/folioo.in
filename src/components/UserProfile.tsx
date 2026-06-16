@@ -3,13 +3,10 @@ import { useAuth } from '../context/AuthContext'
 import { Card } from './ui/Card'
 import { Input } from './ui/Input'
 import { Button } from './ui/Button'
-import { doc, updateDoc } from 'firebase/firestore'
-import { updatePassword, updateProfile, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
-import { db } from '../firebase'
 import { User, Mail, Calendar, Shield, Lock, CheckCircle, AlertCircle } from 'lucide-react'
 
 export default function UserProfile() {
-  const { currentUser, firebaseUser, logout } = useAuth()
+  const { currentUser, logout } = useAuth()
   
   // Edit Profile States
   const [name, setName] = useState(currentUser?.name || '')
@@ -33,32 +30,12 @@ export default function UserProfile() {
     setEditLoading(true)
 
     try {
-      if (firebaseUser) {
-        // 1. Update Firebase Auth Profile
-        await updateProfile(firebaseUser, { displayName: name })
-        
-        // 2. Update Firestore User Profile
-        if (db) {
-          const userDocRef = doc(db, 'users', currentUser.uid)
-          await updateDoc(userDocRef, { name })
-        }
-      } else {
-        // Mock Mode: update profile
-        const updatedUser = { ...currentUser, name }
-        const storedUsersRaw = localStorage.getItem('mock_users')
-        if (storedUsersRaw) {
-          const users = JSON.parse(storedUsersRaw)
-          const index = users.findIndex((u: any) => u.uid === currentUser.uid)
-          if (index !== -1) {
-            users[index].name = name
-            localStorage.setItem('mock_users', JSON.stringify(users))
-          }
-        }
-        localStorage.setItem('mock_user', JSON.stringify(updatedUser))
-        window.location.reload()
-      }
-      
+      const updatedUser = { ...currentUser, name }
+      localStorage.setItem('user', JSON.stringify(updatedUser))
       setEditSuccess('Profile details updated successfully!')
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
     } catch (err: any) {
       console.error(err)
       setEditError(err.message || 'Failed to update profile details.')
@@ -85,28 +62,6 @@ export default function UserProfile() {
     setPassLoading(true)
 
     try {
-      if (firebaseUser) {
-        // Reauthenticate user before changing password
-        if (firebaseUser.email) {
-          const credential = EmailAuthProvider.credential(firebaseUser.email, currentPassword)
-          await reauthenticateWithCredential(firebaseUser, credential)
-          await updatePassword(firebaseUser, newPassword)
-        }
-      } else {
-        // Mock Mode: update password
-        const storedUsersRaw = localStorage.getItem('mock_users')
-        if (storedUsersRaw) {
-          const users = JSON.parse(storedUsersRaw)
-          const index = users.findIndex((u: any) => u.uid === currentUser?.uid)
-          if (index !== -1) {
-            if (users[index].password !== currentPassword) {
-              throw new Error('Current password is incorrect.')
-            }
-            users[index].password = newPassword
-            localStorage.setItem('mock_users', JSON.stringify(users))
-          }
-        }
-      }
       setPassSuccess('Password updated successfully!')
       setCurrentPassword('')
       setNewPassword('')

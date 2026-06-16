@@ -96,13 +96,13 @@ export default function PortfolioGallery({ onNavigate }: PortfolioGalleryProps) 
           </button>
         </div>
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => onNavigate('landing')}>
-          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center font-bold text-white shadow-glow">P</div>
-          <span className="font-extrabold tracking-tight text-base">PortifyHub</span>
+          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center font-bold text-white shadow-glow">F</div>
+          <span className="font-extrabold tracking-tight text-base">Folioo</span>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="max-w-6xl mx-auto w-full pt-28 pb-24 px-4 sm:px-8 z-10 flex-1 space-y-10">
+      <main className="max-w-7xl mx-auto w-full pt-28 pb-24 px-4 sm:px-6 lg:px-8 z-10 flex-1 space-y-10">
         
         {/* Title and Search section */}
         <div className="space-y-4 text-center md:text-left">
