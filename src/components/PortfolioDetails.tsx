@@ -34,6 +34,32 @@ export default function PortfolioDetails({ portfolio, onNavigate }: PortfolioDet
   const [lightboxIndex, setLightboxIndex] = React.useState<number | null>(null)
   const { portfolios } = usePortfolios()
 
+  const handleLiveDemo = () => {
+    const url = portfolio.demoUrl || 'https://folioo.in'
+    window.open(url.startsWith('http') ? url : `https://${url}`, '_blank')
+  }
+
+  const handleGithub = () => {
+    const url = portfolio.githubUrl || 'github.com'
+    window.open(url.startsWith('http') ? url : `https://${url}`, '_blank')
+  }
+
+  const handleDownload = () => {
+    const element = document.createElement("a")
+    const file = new Blob([
+      `Folioo Template Package for: ${portfolio.title}\n` +
+      `Category: ${portfolio.category}\n` +
+      `Author: ${portfolio.author}\n` +
+      `Tech Stack: ${portfolio.techStack || portfolio.tags?.join(', ') || ''}\n\n` +
+      `This is a dynamically generated local development archive. In production, this would contain the actual code zip package.`
+    ], { type: 'text/plain' })
+    element.href = URL.createObjectURL(file)
+    element.download = `${portfolio.title.toLowerCase().replace(/\s+/g, '-')}-main.zip`
+    document.body.appendChild(element)
+    element.click()
+    document.body.removeChild(element)
+  }
+
   // Auto-scroll to top when component mounts or portfolio changes
   React.useEffect(() => {
     window.scrollTo(0, 0)
@@ -130,7 +156,7 @@ export default function PortfolioDetails({ portfolio, onNavigate }: PortfolioDet
                 variant="glow" 
                 size="md" 
                 className="w-full justify-center gap-2"
-                onClick={() => alert(`Launching live deployment preview for: ${portfolio.demoUrl}`)}
+                onClick={handleLiveDemo}
               >
                 View Live Demo <ExternalLink className="w-4 h-4" />
               </Button>
@@ -138,7 +164,7 @@ export default function PortfolioDetails({ portfolio, onNavigate }: PortfolioDet
                 variant="secondary" 
                 size="md" 
                 className="w-full justify-center gap-2 border-border/80 hover:border-zinc-700 text-white"
-                onClick={() => alert(`Opening source repository: https://${portfolio.githubUrl}`)}
+                onClick={handleGithub}
               >
                 <Code2 className="w-4 h-4" /> Open GitHub
               </Button>
@@ -146,7 +172,7 @@ export default function PortfolioDetails({ portfolio, onNavigate }: PortfolioDet
                 variant="outline" 
                 size="md" 
                 className="w-full justify-center gap-2 border-border/60 hover:bg-neutral-800"
-                onClick={() => alert(`Beginning file download package: ${portfolio.title.toLowerCase().replace(/\s+/g, '-')}-main.zip`)}
+                onClick={handleDownload}
               >
                 <FileArchive className="w-4 h-4" /> Download ZIP
               </Button>

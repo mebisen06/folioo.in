@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { creatorService } from '../services/creatorService'
+import { portfolioService } from '../services/portfolioService'
 import type { CreatorDashboardData } from '../types'
 
 export function useCreatorDashboard() {
@@ -41,14 +42,26 @@ export function useCreatorDashboard() {
   }
 
   const createPortfolio = async (portfolio: any) => {
-    // Optimistic update
-    if (data) {
-      setData({
-        ...data,
-        portfolios: [...data.portfolios, portfolio]
+    try {
+      const created = await portfolioService.create({
+        title: portfolio.title || portfolio.name,
+        author: portfolio.author || 'Creator',
+        category: portfolio.category,
+        techStack: portfolio.techStack,
+        description: portfolio.description,
+        tags: portfolio.tags || [],
+        difficulty: portfolio.difficulty || 'Beginner'
       })
+      if (data) {
+        setData({
+          ...data,
+          portfolios: [...data.portfolios, created]
+        })
+      }
+    } catch (err: any) {
+      console.error('Failed to create portfolio', err)
+      throw err
     }
-    // API call can go here if needed: await creatorService.createPortfolio(portfolio)
   }
 
   const updatePortfolio = async (id: string | number, updates: any) => {

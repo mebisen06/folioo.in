@@ -17,6 +17,7 @@ import { Button } from './ui/Button'
 import { Input } from './ui/Input'
 import { Badge } from './ui/Badge'
 import { cn } from '../utils/cn'
+import { portfolioService } from '../services/portfolioService'
 
 // --- Types ---
 export interface PortfolioDraft {
@@ -58,7 +59,12 @@ export default function PortfolioUpload() {
   
   // Media states
   const [thumbnailUrl, setThumbnailUrl] = React.useState<string | null>(null)
+  const [thumbnailFile, setThumbnailFile] = React.useState<File | null>(null)
   const [screenshotUrls, setScreenshotUrls] = React.useState<string[]>([])
+  const [screenshotFiles, setScreenshotFiles] = React.useState<File[]>([])
+
+  const [isPublishing, setIsPublishing] = React.useState(false)
+  const [publishError, setPublishError] = React.useState<string | null>(null)
 
   // Load from local storage on mount
   React.useEffect(() => {
@@ -101,6 +107,7 @@ export default function PortfolioUpload() {
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0]
       if (file.type.startsWith('image/')) {
+        setThumbnailFile(file)
         setThumbnailUrl(URL.createObjectURL(file))
       }
     }
@@ -110,16 +117,20 @@ export default function PortfolioUpload() {
     e.preventDefault()
     if (e.dataTransfer.files) {
       const newUrls: string[] = []
+      const newFiles: File[] = []
       Array.from(e.dataTransfer.files).forEach(file => {
         if (file.type.startsWith('image/')) {
+          newFiles.push(file)
           newUrls.push(URL.createObjectURL(file))
         }
       })
+      setScreenshotFiles(prev => [...prev, ...newFiles])
       setScreenshotUrls(prev => [...prev, ...newUrls])
     }
   }
 
   const removeScreenshot = (indexToRemove: number) => {
+    setScreenshotFiles(prev => prev.filter((_, idx) => idx !== indexToRemove))
     setScreenshotUrls(prev => prev.filter((_, idx) => idx !== indexToRemove))
   }
 
@@ -134,13 +145,40 @@ export default function PortfolioUpload() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handlePublish = () => {
-    if (validateForm()) {
-      alert('Validation passed! Ready for upload to server.')
-      // Proceed with actual API upload logic here
-    } else {
-      // Scroll to top or show global error
+  const handlePublish = async () => {
+    if (!validateForm()) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    setIsPublishing(true)
+    setPublishError(null)
+    try {
+      const payload = {
+        title: formData.name,
+        description: formData.description,
+        githubUrl: formData.githubUrl,
+        demoUrl: formData.liveDemoUrl,
+        category: formData.category,
+        techStack: formData.techStack,
+        difficulty: formData.difficulty,
+        setupGuide: formData.setupGuide,
+        customizationGuide: formData.customizationGuide,
+        deploymentGuide: formData.deploymentGuide
+      }
+      await portfolioService.uploadPortfolioWithAssets(
+        payload,
+        thumbnailFile || undefined,
+        screenshotFiles.length > 0 ? screenshotFiles : undefined
+      )
+      localStorage.removeItem('portfolio_upload_draft')
+      window.history.pushState({}, '', '/creator')
+      window.dispatchEvent(new Event('popstate'))
+    } catch (err: any) {
+      console.error('Publishing failed', err)
+      setPublishError(err.message || 'Failed to publish portfolio to backend. Please check connection.')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } finally {
+      setIsPublishing(false)
     }
   }
 
@@ -175,14 +213,32 @@ export default function PortfolioUpload() {
         </div>
 
         <div className="flex items-center gap-3 self-start sm:self-auto">
-          <Button variant="outline" onClick={() => localStorage.removeItem('portfolio_upload_draft')}>
+          <Button variant="outline" onClick={() => localStorage.removeItem('portfolio_upload_draft')} disabled={isPublishing}>
             Discard Draft
           </Button>
-          <Button variant="glow" onClick={handlePublish} className="gap-2">
-            <UploadCloud className="w-4 h-4" /> Publish to Gallery
+          <Button variant="glow" onClick={handlePublish} className="gap-2" disabled={isPublishing}>
+            {isPublishing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Publishing...
+              </>
+            ) : (
+              <>
+                <UploadCloud className="w-4 h-4" /> Publish to Gallery
+              </>
+            )}
           </Button>
         </div>
       </div>
+
+      {publishError && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-red-950/20 border border-red-900/40 rounded-xl flex items-start gap-3 text-red-400">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-sm font-bold">Publishing Failed</h4>
+            <p className="text-xs mt-1 opacity-80">{publishError}</p>
+          </div>
+        </motion.div>
+      )}
 
       {Object.keys(errors).length > 0 && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-red-950/20 border border-red-900/40 rounded-xl flex items-start gap-3 text-red-400">
@@ -322,13 +378,14 @@ export default function PortfolioUpload() {
                 thumbnailUrl ? "p-0" : "p-12"
               )}
               onClick={() => {
-                // Mock click to upload
                 const input = document.createElement('input')
                 input.type = 'file'
                 input.accept = 'image/*'
                 input.onchange = (e: any) => {
                   if (e.target.files && e.target.files[0]) {
-                    setThumbnailUrl(URL.createObjectURL(e.target.files[0]))
+                    const file = e.target.files[0]
+                    setThumbnailFile(file)
+                    setThumbnailUrl(URL.createObjectURL(file))
                   }
                 }
                 input.click()
@@ -377,7 +434,12 @@ export default function PortfolioUpload() {
                 input.onchange = (e: any) => {
                   if (e.target.files) {
                     const newUrls: string[] = []
-                    Array.from(e.target.files).forEach((file: any) => newUrls.push(URL.createObjectURL(file)))
+                    const newFiles: File[] = []
+                    Array.from(e.target.files).forEach((file: any) => {
+                      newFiles.push(file)
+                      newUrls.push(URL.createObjectURL(file))
+                    })
+                    setScreenshotFiles(prev => [...prev, ...newFiles])
                     setScreenshotUrls(prev => [...prev, ...newUrls])
                   }
                 }

@@ -3,22 +3,21 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyBLATZsMN9gsYkFAfj0KDmEs40TiRgtbe4",
+  authDomain: "folioo-17685.firebaseapp.com",
+  projectId: "folioo-17685",
+  storageBucket: "folioo-17685.firebasestorage.app",
+  messagingSenderId: "416507528657",
+  appId: "1:416507528657:web:48f3e4113b1c18b6b0ccf0",
+  measurementId: "G-JQ3S5RVDXW"
 }
 
-export const isFirebaseConfigured = !!firebaseConfig.apiKey
+export const isFirebaseConfigured = true
 
 // Initialize Firebase
-const app = isFirebaseConfigured 
-  ? (getApps().length > 0 ? getApp() : initializeApp(firebaseConfig))
-  : null
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
 
 // Export Services
-export const auth = app ? getAuth(app) : null
+export const auth = getAuth(app)
 export const googleProvider = new GoogleAuthProvider()
-export const db = app ? getFirestore(app) : null
+export const db = getFirestore(app)
