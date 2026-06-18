@@ -2,16 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy requirements and install dependencies
+# Install dependencies first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir httpx
 
-# Copy code
+# Copy backend source code (excluding ignored paths via .dockerignore)
 COPY . .
 
-# Expose port 8080
+# Default port environment variable
+ENV PORT=8080
+
+# Expose the default port (optional metadata, Render ignores EXPOSE and uses PORT env anyway)
 EXPOSE 8080
 
-# Command to run uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Run uvicorn using sh -c to ensure environment variable substitution of PORT
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
