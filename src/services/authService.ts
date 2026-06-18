@@ -25,6 +25,7 @@ class AuthService {
   logout(): void {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    localStorage.removeItem('authProvider')
     // Reset app state if needed or redirect
     window.location.reload()
   }

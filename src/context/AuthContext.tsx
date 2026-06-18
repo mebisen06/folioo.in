@@ -3,7 +3,7 @@ import type { Role } from '../types'
 import { authService } from '../services/authService'
 import { apiClient } from '../api/client'
 import { auth, googleProvider } from '../firebase'
-import { signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged } from 'firebase/auth'
+import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
 import type { User as FirebaseUser } from 'firebase/auth'
 
 export interface AuthUser {
@@ -49,42 +49,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // 2. Listen to Firebase auth state changes
-    const unsubscribe = onAuthStateChanged(auth, async (fUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (fUser) => {
       setFirebaseUser(fUser)
       
-      if (fUser) {
-        const localUserId = localUser ? (localUser.id || (localUser as any).uid || '') : ''
-        // If we are logged in on Firebase, but don't have a matching backend session, sync it!
-        if (localUserId !== fUser.uid) {
-          const roleRequested = (localStorage.getItem('google_sign_in_role') as Role) || 'User'
-          try {
-            const payload = {
-              uid: fUser.uid,
-              email: fUser.email || '',
-              name: fUser.displayName || 'Google User',
-              role: roleRequested,
-              photoURL: fUser.photoURL || null
-            }
-            const res = await apiClient.post<{ token: string, user: any }>('/auth/google', payload)
-            authService.setToken(res.token)
-            authService.setUser(res.user)
-            setCurrentUser(res.user)
-            localStorage.removeItem('google_sign_in_role')
-            
-            // Trigger navigation update by reloading or updating window location/state if needed
-            // Since navigation is controlled by page state, we can let App.tsx re-render.
-          } catch (err) {
-            console.error('Error syncing Google user with backend:', err)
-          }
-        }
-      } else {
-        const localUserId = localUser ? (localUser.id || (localUser as any).uid || '') : ''
-        // If Firebase user logs out but we still have a local Google-login session active, clear it.
-        if (localUser && localUserId.startsWith('google-')) {
-          authService.logout()
-          setCurrentUser(null)
-        }
+      const provider = localStorage.getItem('authProvider')
+      // If Firebase user logs out but we still have a local Google-login session active, clear it.
+      if (provider === 'google' && !fUser && localUser) {
+        authService.logout()
+        setCurrentUser(null)
       }
+      setLoading(false)
+    }, (error) => {
+      console.error("Firebase auth state change error:", error)
       setLoading(false)
     })
 
@@ -93,54 +69,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     const response = await authService.login({ email, password })
+    localStorage.setItem('authProvider', 'password')
     setCurrentUser(response.user as any)
   }
 
   const signup = async (email: string, password: string, name: string, roleRequested: Role) => {
     const response = await authService.register({ email, password, name, role: roleRequested })
+    localStorage.setItem('authProvider', 'password')
     setCurrentUser(response.user as any)
   }
 
   const googleSignIn = async (roleRequested: Role = 'User') => {
-    // Save the requested role in localStorage so it persists across redirects
-    localStorage.setItem('google_sign_in_role', roleRequested)
-    try {
-      const result = await signInWithPopup(auth, googleProvider)
-      const firebaseUser = result.user
+    const result = await signInWithPopup(auth, googleProvider)
+    const firebaseUser = result.user
 
-      const payload = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || '',
-        name: firebaseUser.displayName || 'Google User',
-        role: roleRequested,
-        photoURL: firebaseUser.photoURL || null
-      }
-
-      // Authenticate the Firebase identity against the FastAPI backend
-      const res = await apiClient.post<{ token: string, user: any }>('/auth/google', payload)
-      
-      // Save backend JWT and user profile
-      authService.setToken(res.token)
-      authService.setUser(res.user)
-      setCurrentUser(res.user)
-      localStorage.removeItem('google_sign_in_role')
-    } catch (err: any) {
-      // Fallback to redirect if popup is blocked or closed by browser
-      if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
-        console.warn('Google Sign-In popup blocked or closed. Falling back to redirect flow...')
-        await signInWithRedirect(auth, googleProvider)
-      } else {
-        throw err
-      }
+    const payload = {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email || '',
+      name: firebaseUser.displayName || 'Google User',
+      role: roleRequested,
+      photoURL: firebaseUser.photoURL || null
     }
+
+    // Authenticate the Firebase identity against the FastAPI backend
+    const res = await apiClient.post<{ token: string, user: any }>('/auth/google', payload)
+    
+    // Save backend JWT and user profile
+    authService.setToken(res.token)
+    authService.setUser(res.user)
+    localStorage.setItem('authProvider', 'google')
+    setCurrentUser(res.user)
   }
 
   const logout = async () => {
-    await signOut(auth)
+    try {
+      await signOut(auth)
+    } catch (err) {
+      console.error("Error signing out from Firebase:", err)
+    }
     authService.logout()
     setCurrentUser(null)
     setFirebaseUser(null)
-    localStorage.removeItem('google_sign_in_role')
   }
 
   const resetPassword = async (email: string) => {

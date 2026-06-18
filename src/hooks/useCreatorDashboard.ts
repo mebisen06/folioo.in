@@ -28,11 +28,17 @@ export function useCreatorDashboard() {
   const deletePortfolio = async (id: string | number) => {
     try {
       await creatorService.deletePortfolio(id)
-      // Optimistic update or refetch
       if (data) {
+        const target = data.portfolios.find(p => p.id === id)
         setData({
           ...data,
-          portfolios: data.portfolios.filter((p) => p.id !== id)
+          portfolios: data.portfolios.filter((p) => p.id !== id),
+          stats: {
+            ...data.stats,
+            totalPortfolios: Math.max(0, Number(data.stats.totalPortfolios) - 1),
+            totalViews: Math.max(0, Number(data.stats.totalViews) - (Number(target?.views) || 0)),
+            totalDownloads: Math.max(0, Number(data.stats.totalDownloads) - (Number(target?.downloads) || 0))
+          }
         })
       }
     } catch (err: any) {
@@ -53,9 +59,24 @@ export function useCreatorDashboard() {
         difficulty: portfolio.difficulty || 'Beginner'
       })
       if (data) {
+        // Build returned mock response from service call.
+        // If the service doesn't return full views/downloads, default to 0
+        const newItem = {
+          ...created,
+          name: created.title || created.name || portfolio.name || portfolio.title,
+          views: created.views !== undefined ? created.views : 0,
+          downloads: created.downloads !== undefined ? created.downloads : 0,
+          status: created.status || 'Active',
+          techStack: created.techStack || portfolio.techStack || '',
+          description: created.description || portfolio.description || ''
+        }
         setData({
           ...data,
-          portfolios: [...data.portfolios, created]
+          portfolios: [newItem, ...data.portfolios],
+          stats: {
+            ...data.stats,
+            totalPortfolios: Number(data.stats.totalPortfolios) + 1
+          }
         })
       }
     } catch (err: any) {
@@ -68,9 +89,20 @@ export function useCreatorDashboard() {
     try {
       await creatorService.updatePortfolio(id, updates)
       if (data) {
+        const target = data.portfolios.find(p => p.id === id)
+        const oldViews = Number(target?.views) || 0
+        const oldDownloads = Number(target?.downloads) || 0
+        const newViews = Number(updates.views) !== undefined ? Number(updates.views) : oldViews
+        const newDownloads = Number(updates.downloads) !== undefined ? Number(updates.downloads) : oldDownloads
+        
         setData({
           ...data,
-          portfolios: data.portfolios.map(p => p.id === id ? { ...p, ...updates } : p)
+          portfolios: data.portfolios.map(p => p.id === id ? { ...p, ...updates, name: updates.name || updates.title || p.name } : p),
+          stats: {
+            ...data.stats,
+            totalViews: Math.max(0, Number(data.stats.totalViews) - oldViews + newViews),
+            totalDownloads: Math.max(0, Number(data.stats.totalDownloads) - oldDownloads + newDownloads)
+          }
         })
       }
     } catch (err: any) {

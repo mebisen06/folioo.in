@@ -37,15 +37,6 @@ app.add_middleware(
 
 DATABASE_FILE = os.path.join(os.path.dirname(__file__), "database.db")
 
-def get_db_connection(write=False):
-    conn = sqlite3.connect(DATABASE_FILE, timeout=20.0)
-    if write:
-        conn.isolation_level = None
-        conn.execute("BEGIN IMMEDIATE")
-    return conn
-
-
-
 JWT_SECRET = os.getenv("JWT_SECRET")
 if not JWT_SECRET:
     logger.warning("WARNING: JWT_SECRET environment variable is not set. Using insecure default secret.")
@@ -70,12 +61,7 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 # Database initialization
 def init_db():
-    temp_conn = sqlite3.connect(DATABASE_FILE)
-    temp_conn.isolation_level = None
-    temp_conn.execute("PRAGMA journal_mode=WAL;")
-    temp_conn.close()
-
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     
     # Create Users table
@@ -211,7 +197,7 @@ def get_current_user_from_token(authorization: Optional[str] = Header(None)) -> 
 @app.post("/api/auth/login")
 @app.post("/api/v1/auth/login")
 def login(req: LoginRequest):
-    conn = get_db_connection()
+    conn = sqlite3.connect(DATABASE_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -240,8 +226,7 @@ def login(req: LoginRequest):
 @app.post("/api/auth/register")
 @app.post("/api/v1/auth/register")
 def signup(req: SignupRequest):
-    pwd_hash = hash_password(req.password)
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     
     cursor.execute("SELECT * FROM users WHERE email = ?", (req.email,))
@@ -250,6 +235,7 @@ def signup(req: SignupRequest):
         raise HTTPException(status_code=400, detail="Email already registered")
         
     uid = f"user-{os.urandom(6).hex()}"
+    pwd_hash = hash_password(req.password)
     created_at = datetime.utcnow().isoformat()
     
     cursor.execute(
@@ -275,7 +261,7 @@ def signup(req: SignupRequest):
 @app.post("/api/auth/google")
 @app.post("/api/v1/auth/google")
 def google_auth(req: GoogleAuthRequest):
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -314,7 +300,7 @@ def google_auth(req: GoogleAuthRequest):
 @app.get("/api/portfolios")
 @app.get("/api/v1/portfolios")
 def get_portfolios(category: Optional[str] = None, search: Optional[str] = None):
-    conn = get_db_connection()
+    conn = sqlite3.connect(DATABASE_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -362,7 +348,7 @@ def get_portfolio_templates():
 @app.post("/api/portfolios")
 @app.post("/api/v1/portfolios")
 def upload_portfolio(req: PortfolioCreate, user: Dict[str, Any] = Depends(get_current_user_from_token)):
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     
     pid = f"port-{os.urandom(4).hex()}"
@@ -377,7 +363,21 @@ def upload_portfolio(req: PortfolioCreate, user: Dict[str, Any] = Depends(get_cu
     conn.commit()
     conn.close()
     
-    return {"id": pid, "status": "Success"}
+    return {
+        "id": pid,
+        "title": req.title,
+        "name": req.title,
+        "author": req.author,
+        "category": req.category,
+        "views": 0,
+        "downloads": 0,
+        "status": "Active",
+        "techStack": req.techStack,
+        "description": req.description,
+        "tags": req.tags,
+        "submittedAt": submitted_at,
+        "difficulty": req.difficulty
+    }
 
 @app.post("/api/portfolios/upload")
 @app.post("/api/v1/portfolios/upload")
@@ -394,7 +394,7 @@ def upload_portfolio_with_assets(
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid portfolioData JSON")
         
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     
     pid = f"port-{os.urandom(4).hex()}"
@@ -431,7 +431,7 @@ def upload_portfolio_with_assets(
 @app.get("/api/resumes/{id}")
 @app.get("/api/v1/resumes/{id}")
 def get_resume(id: Optional[str] = "current", user: Dict[str, Any] = Depends(get_current_user_from_token)):
-    conn = get_db_connection()
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     cursor.execute("SELECT resume_data FROM resumes WHERE user_uid = ?", (user["uid"],))
     row = cursor.fetchone()
@@ -471,7 +471,7 @@ def get_resume(id: Optional[str] = "current", user: Dict[str, Any] = Depends(get
 @app.post("/api/v1/resumes")
 def save_resume(req_data: Dict[str, Any], user: Dict[str, Any] = Depends(get_current_user_from_token)):
     import json
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     
     resume_json = json.dumps(req_data)
@@ -498,7 +498,7 @@ def get_guides():
 @app.get("/api/creator/dashboard")
 @app.get("/api/v1/creator/dashboard")
 def get_creator_dashboard(user: Dict[str, Any] = Depends(get_current_user_from_token)):
-    conn = get_db_connection()
+    conn = sqlite3.connect(DATABASE_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -514,11 +514,14 @@ def get_creator_dashboard(user: Dict[str, Any] = Depends(get_current_user_from_t
         portfolios_list.append({
             "id": r["id"],
             "title": r["title"],
+            "name": r["title"],
             "author": r["author"],
             "category": r["category"],
             "views": r["views"],
             "downloads": r["downloads"],
-            "status": r["status"]
+            "status": r["status"],
+            "techStack": r["tech_stack"],
+            "description": r["description"]
         })
         
     return {
@@ -542,7 +545,7 @@ def get_creator_dashboard(user: Dict[str, Any] = Depends(get_current_user_from_t
 @app.get("/api/admin/dashboard")
 @app.get("/api/v1/admin/dashboard")
 def get_admin_dashboard(user: Dict[str, Any] = Depends(get_current_user_from_token)):
-    conn = get_db_connection()
+    conn = sqlite3.connect(DATABASE_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -570,11 +573,14 @@ def get_admin_dashboard(user: Dict[str, Any] = Depends(get_current_user_from_tok
         portfolios.append({
             "id": r["id"],
             "title": r["title"],
+            "name": r["title"],
             "author": r["author"],
             "category": r["category"],
             "views": r["views"],
             "downloads": r["downloads"],
-            "status": r["status"]
+            "status": r["status"],
+            "techStack": r["tech_stack"],
+            "description": r["description"]
         })
         
     total_downloads = sum(r["downloads"] for r in port_rows)
@@ -612,7 +618,7 @@ class StatusUpdate(BaseModel):
 @app.get("/api/portfolios/{id}")
 @app.get("/api/v1/portfolios/{id}")
 def get_portfolio_by_id(id: str):
-    conn = get_db_connection()
+    conn = sqlite3.connect(DATABASE_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM portfolios WHERE id = ?", (id,))
@@ -639,7 +645,7 @@ def get_portfolio_by_id(id: str):
 @app.put("/api/portfolios/{id}")
 @app.put("/api/v1/portfolios/{id}")
 def update_portfolio(id: str, req: PortfolioUpdate, user: Dict[str, Any] = Depends(get_current_user_from_token)):
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     
     # Check if portfolio exists
@@ -708,7 +714,7 @@ def update_portfolio(id: str, req: PortfolioUpdate, user: Dict[str, Any] = Depen
 @app.delete("/api/portfolios/{id}")
 @app.delete("/api/v1/portfolios/{id}")
 def delete_portfolio(id: str, user: Dict[str, Any] = Depends(get_current_user_from_token)):
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM portfolios WHERE id = ?", (id,))
     conn.commit()
@@ -721,7 +727,7 @@ def delete_portfolio(id: str, user: Dict[str, Any] = Depends(get_current_user_fr
 def admin_update_portfolio_status(id: str, req: StatusUpdate, user: Dict[str, Any] = Depends(get_current_user_from_token)):
     if user["role"] != "Admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     cursor.execute("UPDATE portfolios SET status = ? WHERE id = ?", (req.status, id))
     conn.commit()
@@ -733,7 +739,7 @@ def admin_update_portfolio_status(id: str, req: StatusUpdate, user: Dict[str, An
 def admin_delete_portfolio(id: str, user: Dict[str, Any] = Depends(get_current_user_from_token)):
     if user["role"] != "Admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM portfolios WHERE id = ?", (id,))
     conn.commit()
@@ -746,7 +752,7 @@ def admin_delete_portfolio(id: str, user: Dict[str, Any] = Depends(get_current_u
 def admin_suspend_user(id: str, user: Dict[str, Any] = Depends(get_current_user_from_token)):
     if user["role"] != "Admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     cursor.execute("UPDATE users SET status = 'Suspended' WHERE uid = ?", (id,))
     conn.commit()
@@ -758,7 +764,7 @@ def admin_suspend_user(id: str, user: Dict[str, Any] = Depends(get_current_user_
 def admin_activate_user(id: str, user: Dict[str, Any] = Depends(get_current_user_from_token)):
     if user["role"] != "Admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     cursor.execute("UPDATE users SET status = 'Active' WHERE uid = ?", (id,))
     conn.commit()
@@ -770,7 +776,7 @@ def admin_activate_user(id: str, user: Dict[str, Any] = Depends(get_current_user
 def admin_delete_user(id: str, user: Dict[str, Any] = Depends(get_current_user_from_token)):
     if user["role"] != "Admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-    conn = get_db_connection(write=True)
+    conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM users WHERE uid = ?", (id,))
     conn.commit()

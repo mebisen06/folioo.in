@@ -338,8 +338,8 @@ export default function CreatorDashboard() {
                       </div>
                     </td>
                     <td className="p-4 text-zinc-400 font-medium">{item.category}</td>
-                    <td className="p-4 font-mono font-bold text-zinc-300">{item.views.toLocaleString()}</td>
-                    <td className="p-4 font-mono font-bold text-zinc-300">{item.downloads.toLocaleString()}</td>
+                    <td className="p-4 font-mono font-bold text-zinc-300">{(item.views || 0).toLocaleString()}</td>
+                    <td className="p-4 font-mono font-bold text-zinc-300">{(item.downloads || 0).toLocaleString()}</td>
                     <td className="p-4">
                       {item.status === 'Active' && (
                         <Badge variant="success" dot>Active</Badge>
@@ -415,11 +415,11 @@ export default function CreatorDashboard() {
                 </div>
                 <div>
                   <span className="text-[9px] text-zinc-500 block">AGGREGATE VIEWS</span>
-                  <span className="text-zinc-300 font-bold block mt-0.5">{selectedItem.views.toLocaleString()}</span>
+                  <span className="text-zinc-300 font-bold block mt-0.5">{(selectedItem.views || 0).toLocaleString()}</span>
                 </div>
                 <div>
                   <span className="text-[9px] text-zinc-500 block">ZIP DOWNLOADS</span>
-                  <span className="text-zinc-300 font-bold block mt-0.5">{selectedItem.downloads.toLocaleString()}</span>
+                  <span className="text-zinc-300 font-bold block mt-0.5">{(selectedItem.downloads || 0).toLocaleString()}</span>
                 </div>
               </div>
 

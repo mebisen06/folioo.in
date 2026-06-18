@@ -46,7 +46,12 @@ export function useAdminDashboard() {
 
   const deletePortfolio = (id: string | number) => 
     executeAction(() => adminService.deletePortfolio(id), prev => ({
-      ...prev, portfolios: prev.portfolios.filter(p => p.id !== id)
+      ...prev,
+      portfolios: prev.portfolios.filter(p => p.id !== id),
+      stats: {
+        ...prev.stats,
+        totalPortfolios: Math.max(0, prev.stats.totalPortfolios - 1)
+      }
     }))
 
   const suspendUser = (id: string | number) => 
@@ -60,9 +65,19 @@ export function useAdminDashboard() {
     }))
 
   const deleteUser = (id: string | number) => 
-    executeAction(() => adminService.deleteUser(id), prev => ({
-      ...prev, users: prev.users.filter(u => u.id !== id)
-    }))
+    executeAction(() => adminService.deleteUser(id), prev => {
+      const userToDelete = prev.users.find(u => u.id === id)
+      const isCreator = userToDelete?.role === 'Creator'
+      return {
+        ...prev,
+        users: prev.users.filter(u => u.id !== id),
+        stats: {
+          ...prev.stats,
+          totalUsers: Math.max(0, prev.stats.totalUsers - 1),
+          totalCreators: isCreator ? Math.max(0, prev.stats.totalCreators - 1) : prev.stats.totalCreators
+        }
+      }
+    })
 
   return { 
     data, loading, error, refetch: fetchData, 

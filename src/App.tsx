@@ -94,7 +94,7 @@ export default function App() {
 
   const activeMenu = getActiveMenuFromPath(path)
 
-  const { portfolios } = usePortfolios()
+  const { portfolios, loading: portfoliosLoading } = usePortfolios()
 
   // Sidebar Menu Config
   const menuGroups = [
@@ -185,6 +185,15 @@ export default function App() {
   if (path.startsWith('/portfolio/')) {
     const portfolioId = path.split('/')[2]
     const portfolio = portfolios.find(item => String(item.id) === String(portfolioId))
+    
+    if (portfoliosLoading) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center text-white">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        </div>
+      )
+    }
+
     if (portfolio) {
       return (
         <PortfolioDetails

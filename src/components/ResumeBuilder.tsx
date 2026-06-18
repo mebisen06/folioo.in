@@ -68,6 +68,103 @@ export default function ResumeBuilder() {
     setPdfError(null)
     setPdfSuccess(false)
 
+    // Helper functions to parse OKLCH colors and convert to RGB to prevent html2canvas crash
+    const oklchToRgb = (oklchStr: string): string => {
+      const match = oklchStr.match(/oklch\s*\(\s*([0-9.]+%?)\s+([0-9.]+)\s+([0-9.]+(?:deg|rad|grad|turn)?)(?:\s*\/\s*([0-9.]+%?))?\s*\)/i);
+      if (!match) return oklchStr;
+
+      let L = parseFloat(match[1]);
+      if (match[1].endsWith('%')) L /= 100;
+
+      const C = parseFloat(match[2]);
+
+      let H = parseFloat(match[3]);
+      if (match[3].endsWith('rad')) {
+        H = H * (180 / Math.PI);
+      } else if (match[3].endsWith('grad')) {
+        H = H * 0.9;
+      } else if (match[3].endsWith('turn')) {
+        H = H * 360;
+      }
+      const hRad = H * (Math.PI / 180);
+
+      const a = C * Math.cos(hRad);
+      const b = C * Math.sin(hRad);
+
+      const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+      const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+      const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+
+      const l = l_ * l_ * l_;
+      const m = m_ * m_ * m_;
+      const s = s_ * s_ * s_;
+
+      let r = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+      let g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+      let b_val = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+
+      const f = (x: number) => {
+        if (x <= 0.0031308) return 12.92 * x;
+        return 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
+      };
+
+      r = Math.max(0, Math.min(1, r));
+      g = Math.max(0, Math.min(1, g));
+      b_val = Math.max(0, Math.min(1, b_val));
+
+      const rInt = Math.round(f(r) * 255);
+      const gInt = Math.round(f(g) * 255);
+      const bInt = Math.round(f(b_val) * 255);
+
+      const alpha = match[4];
+      if (alpha !== undefined) {
+        let aVal = parseFloat(alpha);
+        if (alpha.endsWith('%')) aVal /= 100;
+        return `rgba(${rInt}, ${gInt}, ${bInt}, ${aVal})`;
+      }
+
+      return `rgb(${rInt}, ${gInt}, ${bInt})`;
+    };
+
+    const replaceOklchWithRgb = (str: string): string => {
+      if (typeof str !== 'string' || !str.includes('oklch')) return str;
+      return str.replace(/oklch\([^)]+\)/g, (match) => {
+        try {
+          return oklchToRgb(match);
+        } catch (e) {
+          return match;
+        }
+      });
+    };
+
+    const originalGetComputedStyle = window.getComputedStyle;
+    
+    // Override window.getComputedStyle to intercept oklch color references
+    window.getComputedStyle = function (elt, pseudoElt) {
+      const style = originalGetComputedStyle(elt, pseudoElt);
+      return new Proxy(style, {
+        get(target, prop) {
+          if (prop === 'getPropertyValue') {
+            return function (propertyName: string) {
+              const val = target.getPropertyValue(propertyName);
+              if (typeof val === 'string' && val.includes('oklch')) {
+                return replaceOklchWithRgb(val);
+              }
+              return val;
+            };
+          }
+          const val = Reflect.get(target, prop);
+          if (typeof val === 'string' && val.includes('oklch')) {
+            return replaceOklchWithRgb(val);
+          }
+          if (typeof val === 'function') {
+            return val.bind(target);
+          }
+          return val;
+        }
+      });
+    };
+
     try {
       const template = resumeData.template || 'modern'
       const bgColor = template === 'ats' ? '#ffffff' : (template === 'student' ? '#171717' : '#111111')
@@ -113,6 +210,7 @@ export default function ResumeBuilder() {
       console.error('PDF Generation Error:', err)
       setPdfError('Failed to generate PDF. Please try again.')
     } finally {
+      window.getComputedStyle = originalGetComputedStyle;
       setGeneratingPdf(false)
     }
   }
