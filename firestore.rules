@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && getUserData().role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('Admin');
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Prevent self-privilege escalation to Admin during registration
+      allow create: if isAuthenticated() && request.auth.uid == userId && (request.resource.data.role == 'User' || request.resource.data.role == 'Creator');
+      // Prevent modifying fields like 'role' unless the client is Admin
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role) || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Portfolios Collection
+    match /portfolios/{portfolioId} {
+      allow read: if true; // Portfolios are public
+      allow create: if isAuthenticated() && (
+        (request.resource.data.creator_id == request.auth.uid && (hasRole('Creator') || isAdmin()))
+      );
+      allow update: if isAuthenticated() && (
+        (resource.data.creator_id == request.auth.uid && request.resource.data.creator_id == request.auth.uid) || isAdmin()
+      );
+      allow delete: if isAuthenticated() && (resource.data.creator_id == request.auth.uid || isAdmin());
+    }
+
+    // Resumes Collection
+    match /resumes/{resumeId} {
+      allow read: if true; // Resumes are public
+      allow create: if isAuthenticated() && (
+        (request.resource.data.creator_id == request.auth.uid && (hasRole('Creator') || isAdmin()))
+      );
+      allow update: if isAuthenticated() && (
+        (resource.data.creator_id == request.auth.uid && request.resource.data.creator_id == request.auth.uid) || isAdmin()
+      );
+      allow delete: if isAuthenticated() && (resource.data.creator_id == request.auth.uid || isAdmin());
+    }
+
+    // Guides Collection
+    match /guides/{guideId} {
+      allow read: if true; // Deployment guides are public
+      allow write: if isAdmin(); // Only Admin can create/update/delete guides
+    }
+  }
+}

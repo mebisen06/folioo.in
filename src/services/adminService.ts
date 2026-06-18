@@ -1,32 +1,70 @@
-import { apiClient } from '../api/client'
-import type { AdminDashboardData } from '../types'
+import { db } from '../firebase'
+import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore'
+import type { AdminDashboardData, User, Portfolio } from '../types'
 
 export const adminService = {
-  getDashboardData: () => {
-    return apiClient.get<AdminDashboardData>('/admin/dashboard')
+  getDashboardData: async (): Promise<AdminDashboardData> => {
+    // Fetch all users
+    const usersSnap = await getDocs(collection(db, "users"))
+    const users: User[] = []
+    usersSnap.forEach((doc) => {
+      users.push(doc.data() as User)
+    })
+
+    // Fetch all portfolios
+    const portfoliosSnap = await getDocs(collection(db, "portfolios"))
+    const portfolios: Portfolio[] = []
+    portfoliosSnap.forEach((doc) => {
+      portfolios.push(doc.data() as Portfolio)
+    })
+
+    const totalDownloads = portfolios.reduce((sum, p) => sum + (Number(p.downloads) || 0), 0)
+
+    return {
+      stats: {
+        totalUsers: users.length,
+        totalCreators: users.filter(u => u.role === 'Creator').length,
+        totalPortfolios: portfolios.length,
+        totalDownloads: totalDownloads
+      },
+      users: users,
+      portfolios: portfolios
+    }
   },
   
-  approvePortfolio: (id: string | number) => {
-    return apiClient.put<{ success: boolean }>(`/admin/portfolios/${id}/status`, { status: 'Approved' })
+  approvePortfolio: async (id: string | number) => {
+    const docRef = doc(db, "portfolios", id.toString())
+    await updateDoc(docRef, { status: 'Approved' })
+    return { success: true }
   },
 
-  rejectPortfolio: (id: string | number) => {
-    return apiClient.put<{ success: boolean }>(`/admin/portfolios/${id}/status`, { status: 'Rejected' })
+  rejectPortfolio: async (id: string | number) => {
+    const docRef = doc(db, "portfolios", id.toString())
+    await updateDoc(docRef, { status: 'Rejected' })
+    return { success: true }
   },
 
-  deletePortfolio: (id: string | number) => {
-    return apiClient.delete<{ success: boolean }>(`/admin/portfolios/${id}`)
+  deletePortfolio: async (id: string | number) => {
+    const docRef = doc(db, "portfolios", id.toString())
+    await deleteDoc(docRef)
+    return { success: true }
   },
 
-  suspendUser: (id: string | number) => {
-    return apiClient.put<{ success: boolean }>(`/admin/users/${id}/suspend`, {})
+  suspendUser: async (id: string | number) => {
+    const docRef = doc(db, "users", id.toString())
+    await updateDoc(docRef, { status: 'Suspended' })
+    return { success: true }
   },
 
-  activateUser: (id: string | number) => {
-    return apiClient.put<{ success: boolean }>(`/admin/users/${id}/activate`, {})
+  activateUser: async (id: string | number) => {
+    const docRef = doc(db, "users", id.toString())
+    await updateDoc(docRef, { status: 'Active' })
+    return { success: true }
   },
 
-  deleteUser: (id: string | number) => {
-    return apiClient.delete<{ success: boolean }>(`/admin/users/${id}`)
+  deleteUser: async (id: string | number) => {
+    const docRef = doc(db, "users", id.toString())
+    await deleteDoc(docRef)
+    return { success: true }
   }
 }

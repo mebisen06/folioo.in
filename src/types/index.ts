@@ -36,6 +36,7 @@ export interface Portfolio {
   gradient?: string
   techStack?: string
   stars?: number
+  creator_id?: string
 }
 
 // Analytics / Dashboard Metrics

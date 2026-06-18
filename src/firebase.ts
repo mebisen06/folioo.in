@@ -8,8 +8,8 @@ const firebaseConfig = {
   projectId: "folioo-17685",
   storageBucket: "folioo-17685.firebasestorage.app",
   messagingSenderId: "416507528657",
-  appId: "1:416507528657:web:48f3e4113b1c18b6b0ccf0",
-  measurementId: "G-JQ3S5RVDXW"
+  appId: "1:416507528657:web:0625df25c1b18d5fb0ccf0",
+  measurementId: "G-5ZYJ6WL1ZB"
 }
 
 export const isFirebaseConfigured = true
