@@ -21,12 +21,14 @@ import {
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { Badge } from './ui/Badge'
+import { useAuth } from '../context/AuthContext'
 
 export interface LandingPageProps {
   onNavigate: (viewId: string) => void
 }
 
 export default function LandingPage({ onNavigate }: LandingPageProps) {
+  const { currentUser } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
 
   // Categories configurations
@@ -199,12 +201,20 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
         {/* Buttons right */}
         <div className="hidden sm:flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => onNavigate('login')}>
-            Login
-          </Button>
-          <Button variant="glow" size="sm" onClick={() => onNavigate('signup')}>
-            Sign Up
-          </Button>
+          {currentUser ? (
+            <Button variant="glow" size="sm" onClick={() => onNavigate('dashboard')}>
+              Go to Dashboard
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => onNavigate('login')}>
+                Login
+              </Button>
+              <Button variant="glow" size="sm" onClick={() => onNavigate('signup')}>
+                Sign Up
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile menu trigger */}
@@ -248,12 +258,20 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             </button>
             <hr className="border-border/60 my-1" />
             <div className="flex flex-col gap-2.5">
-              <Button variant="outline" size="md" className="w-full" onClick={() => { setMobileMenuOpen(false); onNavigate('login') }}>
-                Login
-              </Button>
-              <Button variant="glow" size="md" className="w-full" onClick={() => { setMobileMenuOpen(false); onNavigate('signup') }}>
-                Sign Up
-              </Button>
+              {currentUser ? (
+                <Button variant="glow" size="md" className="w-full" onClick={() => { setMobileMenuOpen(false); onNavigate('dashboard') }}>
+                  Go to Dashboard
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" size="md" className="w-full" onClick={() => { setMobileMenuOpen(false); onNavigate('login') }}>
+                    Login
+                  </Button>
+                  <Button variant="glow" size="md" className="w-full" onClick={() => { setMobileMenuOpen(false); onNavigate('signup') }}>
+                    Sign Up
+                  </Button>
+                </>
+              )}
             </div>
           </motion.div>
         )}
