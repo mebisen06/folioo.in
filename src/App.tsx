@@ -79,6 +79,9 @@ export default function App() {
       if (path === '/admin' && currentUser.role !== 'Admin') {
         navigate('/')
       }
+      if ((path === '/creator' || path === '/upload') && currentUser.role !== 'Creator' && currentUser.role !== 'Admin') {
+        navigate('/')
+      }
     }
   }, [currentUser, path, loading])
 
