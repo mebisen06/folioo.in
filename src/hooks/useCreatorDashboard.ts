@@ -92,8 +92,8 @@ export function useCreatorDashboard() {
         const target = data.portfolios.find(p => p.id === id)
         const oldViews = Number(target?.views) || 0
         const oldDownloads = Number(target?.downloads) || 0
-        const newViews = Number(updates.views) !== undefined ? Number(updates.views) : oldViews
-        const newDownloads = Number(updates.downloads) !== undefined ? Number(updates.downloads) : oldDownloads
+        const newViews = updates.views !== undefined ? Number(updates.views) : oldViews
+        const newDownloads = updates.downloads !== undefined ? Number(updates.downloads) : oldDownloads
         
         setData({
           ...data,

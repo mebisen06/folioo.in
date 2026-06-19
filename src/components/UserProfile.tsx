@@ -4,6 +4,9 @@ import { Card } from './ui/Card'
 import { Input } from './ui/Input'
 import { Button } from './ui/Button'
 import { User, Mail, Calendar, Shield, Lock, CheckCircle, AlertCircle } from 'lucide-react'
+import { db, auth } from '../firebase'
+import { doc, updateDoc } from 'firebase/firestore'
+import { updatePassword } from 'firebase/auth'
 
 export default function UserProfile() {
   const { currentUser, logout } = useAuth()
@@ -30,6 +33,10 @@ export default function UserProfile() {
     setEditLoading(true)
 
     try {
+      // Actually write the updated name to Firestore
+      const userRef = doc(db, "users", currentUser.uid)
+      await updateDoc(userRef, { name })
+
       const updatedUser = { ...currentUser, name }
       localStorage.setItem('user', JSON.stringify(updatedUser))
       setEditSuccess('Profile details updated successfully!')
@@ -62,13 +69,18 @@ export default function UserProfile() {
     setPassLoading(true)
 
     try {
+      const user = auth.currentUser
+      if (!user) throw new Error("No authenticated user found.")
+      
+      await updatePassword(user, newPassword)
+
       setPassSuccess('Password updated successfully!')
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } catch (err: any) {
       console.error(err)
-      setPassError(err.message || 'Failed to update password. Verify current password.')
+      setPassError(err.message || 'Failed to update password. You may need to log out and log back in to verify your identity.')
     } finally {
       setPassLoading(false)
     }

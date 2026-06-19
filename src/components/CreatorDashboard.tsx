@@ -63,15 +63,8 @@ export default function CreatorDashboard() {
 
   // Actions
   const handleOpenUpload = () => {
-    setFormError('')
-    setFormName('')
-    setFormCategory('Developer')
-    setFormViews(0)
-    setFormDownloads(0)
-    setFormStatus('Active')
-    setFormTechStack('')
-    setFormDescription('')
-    setActiveModal('upload')
+    window.history.pushState({}, '', '/upload')
+    window.dispatchEvent(new Event('popstate'))
   }
 
   const handleOpenEdit = (item: Portfolio) => {
